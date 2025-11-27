@@ -7,23 +7,31 @@ on:
 
 jobs:
   deploy:
-    runs-on: insectscanner-backend
+    runs-on: self-hosted
+
+    env:
+      PORT: 3000
+      REQUEST_URI: ${{ secrets.REQUEST_URI }}
+      FIREBASE_SERVICE_ACCOUNT_BASE64: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BASE64 }}
+      FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+      FIREBASE_WEB_API_KEY: ${{ secrets.FIREBASE_WEB_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      REDIS_HOST: ${{ secrets.REDIS_HOST }}
+      REDIS_PORT: ${{ secrets.REDIS_PORT }}
+      REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build new images
+      - name: Build images
         run: docker compose build
 
-      - name: Start new containers (zero downtime)
-        run: |
-          docker compose up -d --no-deps --build backend
+      - name: Start/Update backend (zero-ish downtime)
+        run: docker compose up -d --no-deps --build backend
 
-      - name: Remove old unused containers & images
-        run: |
-          docker container prune -f
-          docker image prune -f
+      - name: Ensure redis is up (only first time / if changed)
+        run: docker compose up -d redis
 
       - name: Show running containers
         run: docker ps
