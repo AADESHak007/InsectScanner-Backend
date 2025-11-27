@@ -1,0 +1,29 @@
+name: Zero Downtime Deploy (Docker Compose)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: insectscanner-backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build new images
+        run: docker compose build
+
+      - name: Start new containers (zero downtime)
+        run: |
+          docker compose up -d --no-deps --build backend
+
+      - name: Remove old unused containers & images
+        run: |
+          docker container prune -f
+          docker image prune -f
+
+      - name: Show running containers
+        run: docker ps
