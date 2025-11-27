@@ -16,14 +16,23 @@ export const insectIdentificationWorker = new Worker<InsectIdentificationJobData
     // Update job progress
     await job.updateProgress(10);
 
+    // FIX: Convert the serialized buffer back to a real Buffer
+    // Redis stores buffers as { type: 'Buffer', data: [numbers...] }
+    let actualBuffer: Buffer;
+    if (imageBuffer && (imageBuffer as any).type === 'Buffer' && Array.isArray((imageBuffer as any).data)) {
+      actualBuffer = Buffer.from((imageBuffer as any).data);
+    } else {
+      actualBuffer = Buffer.from(imageBuffer);
+    }
+
     // Create a mock Express.Multer.File object from buffer
     const imageFile: Express.Multer.File = {
       fieldname: 'image',
       originalname: imageOriginalName,
       encoding: '7bit',
       mimetype: imageMimetype,
-      buffer: imageBuffer,
-      size: imageBuffer.length,
+      buffer: actualBuffer,
+      size: actualBuffer.length,
       destination: '',
       filename: '',
       path: '',
