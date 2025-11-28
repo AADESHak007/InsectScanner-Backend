@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
 import { validate } from '../middleware/validation.middleware';
 import { registerSchema, loginSchema, socialLoginSchema } from '../schema.ts/auth.schema';
+import { authenticateSession } from '../middleware/auth.middleware';
 
 const router = Router();
 const authService = new AuthService();
@@ -63,6 +64,29 @@ router.post('/social/login', validate(socialLoginSchema), async (req: Request, r
   } catch (error: any) {
     res.status(400).json({
       error: error.message || 'Social login failed',
+    });
+  }
+});
+
+// Get profile route
+router.get('/profile', authenticateSession, async (req: Request, res: Response) => {
+  try {
+    if (!req.user?.uid) {
+      return res.status(401).json({
+        error: 'User not authenticated',
+      });
+    }
+
+    const profile = await authService.getProfile(req.user.uid);
+    
+    res.status(200).json({
+      message: 'Profile retrieved successfully',
+      data: profile,
+    });
+  } catch (error: any) {
+    const statusCode = error.message.includes('not found') ? 404 : 400;
+    res.status(statusCode).json({
+      error: error.message || 'Failed to fetch profile',
     });
   }
 });

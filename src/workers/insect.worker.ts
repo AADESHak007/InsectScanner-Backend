@@ -4,6 +4,7 @@ import { Worker, Job } from 'bullmq';
 import { redisConnection } from '../config/redis.config';
 import { InsectIdentificationJobData } from '../queues/insect.queue';
 import { InsectService } from '../services/insect.service';
+import { incrementUserSearchCount } from '../utils/auth.helpers';
 
 const insectService = new InsectService();
 
@@ -64,8 +65,20 @@ export const insectIdentificationWorker = new Worker<InsectIdentificationJobData
 );
 
 // Worker event handlers
-insectIdentificationWorker.on('completed', (job) => {
+insectIdentificationWorker.on('completed', async (job) => {
   console.log(`✅ Job ${job.id} completed successfully`);
+  
+  // Increment user's search count if userId exists
+  const userId = job.data?.userId;
+  if (userId) {
+    try {
+      await incrementUserSearchCount(userId);
+      console.log(`📊 Search count incremented for user: ${userId}`);
+    } catch (error) {
+      console.error(`❌ Failed to increment search count for user ${userId}:`, error);
+      // Don't throw - this is a non-critical operation
+    }
+  }
 });
 
 insectIdentificationWorker.on('failed', (job, err) => {

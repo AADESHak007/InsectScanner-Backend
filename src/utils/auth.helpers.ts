@@ -91,6 +91,7 @@ export async function getOrCreateUser(
       uid,
       email: options?.email || authUser.email || '',
       provider: options?.provider || 'email',
+      searchCount: 0, // Initialize search count to 0
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
@@ -143,6 +144,62 @@ export async function getOrCreateUser(
       dbUser: convertedUser as User,
       isNewUser: true,
     };
+  }
+}
+
+/**
+ * Get user by UID from Firestore
+ */
+export async function getUserByUid(uid: string): Promise<User | null> {
+  const db = admin.firestore();
+  const userRef = db.collection('users').doc(uid);
+  const userDoc = await userRef.get();
+
+  if (!userDoc.exists) {
+    return null;
+  }
+
+  const userData = userDoc.data() as User;
+  const convertedUser = convertTimestamps(userData);
+  
+  // Ensure searchCount defaults to 0 if not set
+  if (convertedUser.searchCount === undefined) {
+    convertedUser.searchCount = 0;
+  }
+  
+  return convertedUser as User;
+}
+
+/**
+ * Increment user's search count
+ */
+export async function incrementUserSearchCount(uid: string): Promise<void> {
+  if (!uid) {
+    return; // Skip if no user ID
+  }
+
+  const db = admin.firestore();
+  const userRef = db.collection('users').doc(uid);
+  const userDoc = await userRef.get();
+
+  if (!userDoc.exists) {
+    return; // User doesn't exist, skip
+  }
+
+  const userData = userDoc.data() as User;
+  
+  // If searchCount doesn't exist, set it to 1, otherwise increment
+  if (userData.searchCount === undefined) {
+    await userRef.update({
+      searchCount: 1,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } else {
+    // Use Firestore increment to atomically increment the count
+    await userRef.update({
+      searchCount: admin.firestore.FieldValue.increment(1),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
   }
 }
 

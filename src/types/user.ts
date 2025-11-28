@@ -13,6 +13,7 @@ export interface User {
   displayName?: string;
   photoURL?: string;
   provider?: 'email' | 'google' | 'apple';
+  searchCount?: number; // Number of successful insect identification searches
   deletedAt?: Date | Timestamp;
   createdAt?: Date | Timestamp;
   updatedAt?: Date | Timestamp;

@@ -1,6 +1,6 @@
 import admin from 'firebase-admin';
 import { RegisterRequest, LoginRequest, SocialLoginRequest, DeviceInfo } from '../types/user';
-import { getOrCreateUser, createSessionCookie, checkDeletedAccountHistory, mapFirebaseError } from '../utils/auth.helpers';
+import { getOrCreateUser, createSessionCookie, checkDeletedAccountHistory, mapFirebaseError, getUserByUid } from '../utils/auth.helpers';
 
 const FIREBASE_WEB_API_KEY = process.env.FIREBASE_WEB_API_KEY || '';
 
@@ -293,5 +293,22 @@ export class AuthService {
     }
 
     return data.idToken;
+  }
+
+  /**
+   * Get user profile by UID
+   */
+  async getProfile(uid: string) {
+    try {
+      const user = await getUserByUid(uid);
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      return user;
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to fetch user profile');
+    }
   }
 }
